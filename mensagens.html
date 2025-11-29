@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <title>Mensagens Recebidas</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px; border: 1px solid #ccc; text-align: left; vertical-align: top; }
+    tr.nao-visualizada td { font-weight: bold; }
+    .acoes button { margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <h2>Mensagens Recebidas</h2>
+  <p><a href="admin.html">Voltar ao login</a></p>
+  <table id="tabelaMensagens">
+    <thead>
+      <tr><th>Nome</th><th>Email</th><th>Mensagem</th><th>Data</th><th>Ações</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script src="js/jquery-3.6.4.min.js"></script>
+  <script src="js/api.js"></script>
+  <script>
+    function montarTabela() {
+      const lista = obterMensagens();
+      const tbody = $("#tabelaMensagens tbody");
+      tbody.empty();
+
+      if (!lista || lista.length === 0) {
+        tbody.append('<tr><td colspan="5">Nenhuma mensagem.</td></tr>');
+        return;
+      }
+
+      // Ordenar por data (mais recente primeiro)
+      lista.sort((a,b) => new Date(b.data) - new Date(a.data));
+
+      lista.forEach(function(m) {
+        const tr = $("<tr>");
+        if (!m.visualizada) tr.addClass("nao-visualizada");
+
+        const tdNome = $("<td>").text(m.nome);
+        const tdEmail = $("<td>").text(m.email);
+        const tdMsg = $("<td>").text(m.mensagem);
+        const tdData = $("<td>").text(new Date(m.data).toLocaleString());
+        const tdAcoes = $("<td>").addClass("acoes");
+
+        const btnVisual = $("<button>").text("Marcar como visualizada").on("click", function() {
+          if (confirm("Marcar mensagem como visualizada?")) {
+            const ok = marcarMensagemVisualizada(m.id);
+            if (ok) montarTabela();
+            else alert("Erro ao marcar como visualizada.");
+          }
+        });
+
+        const btnExcluir = $("<button>").text("Excluir").on("click", function() {
+          if (confirm("Deseja realmente excluir esta mensagem?")) {
+            const ok = excluirMensagem(m.id);
+            if (ok) montarTabela();
+            else alert("Erro ao excluir mensagem.");
+          }
+        });
+
+        tdAcoes.append(btnVisual).append(btnExcluir);
+        tr.append(tdNome, tdEmail, tdMsg, tdData, tdAcoes);
+        tbody.append(tr);
+      });
+    }
+
+    // Monta inicialmente
+    montarTabela();
+
+    // Reage ao evento disparado por api.js quando mensagens mudam
+    window.addEventListener('mensagemAtualizada', function(e){
+      montarTabela();
+    });
+
+    // Em caso de uso em outra aba, podemos atualizar periodicamente (opcional)
+    // setInterval(montarTabela, 2000);
+
+  </script>
+</body>
+</html>
